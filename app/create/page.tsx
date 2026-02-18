@@ -3,6 +3,9 @@
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import CardPreview from '@/components/CardPreview'
+import { ChevronLeft, Upload, Loader2, Save } from 'lucide-react'
+import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,16 +13,47 @@ export default function CreateCardPage() {
     const router = useRouter()
     const supabase = createClient()
     const [loading, setLoading] = useState(false)
+    const [uploading, setUploading] = useState(false)
     const [formData, setFormData] = useState({
         username_slug: '',
+        name: '',
         job_title: '',
+        company_name: '',
+        tagline: '',
         bio: '',
         phone: '',
         email: '',
-        template: 'modern',
+        website: '',
+        address: '',
+        template: 'curvy',
+        logo_url: null as string | null
     })
 
-    // Basic implementation - needs expansion for all fields and validation
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) {
+            return
+        }
+
+        setUploading(true)
+        const file = e.target.files[0]
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random()}.${fileExt}`
+        const filePath = `${fileName}`
+
+        const { error: uploadError } = await supabase.storage.from('logos').upload(filePath, file)
+
+        if (uploadError) {
+            alert('Error uploading logo: ' + uploadError.message)
+            setUploading(false)
+            return
+        }
+
+        const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(filePath)
+
+        setFormData({ ...formData, logo_url: publicUrl })
+        setUploading(false)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
@@ -33,7 +67,17 @@ export default function CreateCardPage() {
 
         const { error } = await supabase.from('cards').insert({
             user_id: user.id,
-            ...formData
+            username_slug: formData.username_slug,
+            job_title: formData.job_title,
+            company_name: formData.company_name,
+            tagline: formData.tagline,
+            bio: formData.bio,
+            phone: formData.phone,
+            email: formData.email,
+            website: formData.website,
+            address: formData.address,
+            template: formData.template,
+            logo_url: formData.logo_url
         })
 
         if (error) {
@@ -50,67 +94,186 @@ export default function CreateCardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Business Card</h1>
+        <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 py-8 px-4 sm:px-6 lg:px-8 font-sans">
+            <div className="max-w-7xl mx-auto">
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label htmlFor="username_slug" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Unique Username (Slug)
-                        </label>
-                        <div className="mt-1 flex rounded-md shadow-sm">
-                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500 sm:text-sm">
-                                /
-                            </span>
-                            <input
-                                type="text"
-                                name="username_slug"
-                                id="username_slug"
-                                required
-                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                placeholder="johndoe"
-                                value={formData.username_slug}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label htmlFor="job_title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Job Title</label>
-                        <input type="text" name="job_title" id="job_title" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.job_title} onChange={handleChange} />
-                    </div>
-
-                    <div>
-                        <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
-                        <textarea name="bio" id="bio" rows={3} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.bio} onChange={handleChange}></textarea>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <Link href="/dashboard" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
+                            <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                        </Link>
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Display Email</label>
-                            <input type="email" name="email" id="email" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.email} onChange={handleChange} />
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Card</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Fill in the details to generate your digital business card.</p>
                         </div>
-                        <div>
-                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
-                            <input type="tel" name="phone" id="phone" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.phone} onChange={handleChange} />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                    {/* Left Side: Form */}
+                    <div className="lg:col-span-6 space-y-6">
+                        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 shadow-sm rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+
+                            {/* Personal Info Section */}
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                    <span className="w-1 h-6 bg-blue-500 rounded-full"></span>
+                                    Personal Info
+                                </h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Name</label>
+                                        <input type="text" name="name" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.name} onChange={handleChange} placeholder="e.g. John Doe" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Job Title</label>
+                                        <input type="text" name="job_title" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.job_title} onChange={handleChange} placeholder="e.g. Senior Product Designer" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Company Info Section */}
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                    <span className="w-1 h-6 bg-indigo-500 rounded-full"></span>
+                                    Company Details
+                                </h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Logo</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-16 h-16 rounded-xl flex items-center justify-center border-2 border-dashed ${formData.logo_url ? 'border-transparent p-0 overflow-hidden' : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'}`}>
+                                                {formData.logo_url ? (
+                                                    <img src={formData.logo_url} alt="Logo Preview" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Upload className="w-6 h-6 text-gray-400" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleLogoUpload}
+                                                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 cursor-pointer"
+                                                    disabled={uploading}
+                                                />
+                                                {uploading && <p className="text-xs text-blue-500 mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</p>}
+                                                <p className="text-xs text-gray-400 mt-1">Recommended: Square image, max 2MB.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
+                                            <input type="text" name="company_name" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.company_name} onChange={handleChange} placeholder="e.g. Acme Inc." />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tagline / Slogan</label>
+                                            <input type="text" name="tagline" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.tagline} onChange={handleChange} placeholder="e.g. Innovation First" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Website</label>
+                                        <div className="relative rounded-md shadow-sm">
+                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                                <span className="text-gray-500 sm:text-sm">https://</span>
+                                            </div>
+                                            <input type="text" name="website" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 pl-16 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.website} onChange={handleChange} placeholder="www.example.com" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+                                        <input type="text" name="address" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.address} onChange={handleChange} placeholder="e.g. 123 Tech Street, Silicon Valley" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Contact Info Section */}
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                    <span className="w-1 h-6 bg-teal-500 rounded-full"></span>
+                                    Contact & Social
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                            <input type="email" name="email" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.email} onChange={handleChange} placeholder="john@example.com" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                                            <input type="tel" name="phone" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.phone} onChange={handleChange} placeholder="+1 234 567 890" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unique Username (Slug)</label>
+                                        <div className="flex rounded-lg shadow-sm">
+                                            <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 sm:text-sm">ecard.com/</span>
+                                            <input type="text" name="username_slug" required className="flex-1 min-w-0 block w-full px-3 py-2.5 rounded-r-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value={formData.username_slug} onChange={handleChange} placeholder="your-name" />
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">This will be your unique profile URL.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Template Selection */}
+                            <div className="p-6 bg-gray-50 dark:bg-gray-800/50">
+                                <label htmlFor="template" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Template</label>
+                                <select id="template" name="template" className="block w-full pl-3 pr-10 py-3 text-base border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg dark:bg-gray-800 dark:text-white shadow-sm" value={formData.template} onChange={handleChange}>
+                                    <option value="curvy">Curvy (Creative Yellow)</option>
+                                    <option value="modern">Modern (Clean & Minimalist)</option>
+                                    <option value="classic">Classic (Professional Blue)</option>
+                                    <option value="elegant">Elegant (Dark & Gold)</option>
+                                    <option value="geometric">Geometric (Blue & Clean)</option>
+                                    <option value="red-modern">Red Modern (Wave & Bold)</option>
+                                </select>
+                            </div>
+
+                            {/* Submit Button */}
+                            <div className="p-6 border-t border-gray-200 dark:border-gray-800 flex justify-end">
+                                <button type="submit" disabled={loading || uploading} className="inline-flex items-center justify-center px-6 py-3 border border-transparent shadow-lg shadow-blue-500/30 text-base font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5 w-full sm:w-auto">
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="-ml-1 mr-2 h-5 w-5" />
+                                            Save & Create Card
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {/* Right Side: Live Preview */}
+                    <div className="lg:col-span-6">
+                        <div className="sticky top-24 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Live Preview</h2>
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-medium rounded-md capitalize">{formData.template.replace('-', ' ')}</span>
+                            </div>
+
+                            <div className="bg-slate-100 dark:bg-slate-900 rounded-3xl p-4 sm:p-8 flex justify-center items-center shadow-inner min-h-[550px] border border-gray-200 dark:border-gray-800 overflow-hidden relative">
+                                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#888_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                                <div className="relative transform transition-transform duration-300 origin-center scale-[0.6] sm:scale-75 md:scale-90 xl:scale-100">
+                                    <div className="shadow-2xl rounded-xl overflow-hidden">
+                                        <CardPreview data={formData} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="text-center text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                                This is how your card will look to others. All changes are reflected in real-time.
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label htmlFor="template" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Template</label>
-                        <select id="template" name="template" className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.template} onChange={handleChange}>
-                            <option value="modern">Modern</option>
-                            <option value="classic">Classic</option>
-                        </select>
-                    </div>
-
-                    <div className="flex justify-end">
-                        <button type="submit" disabled={loading} className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
-                            {loading ? 'Creating...' : 'Create Card'}
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     )

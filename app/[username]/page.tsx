@@ -1,21 +1,16 @@
 import { createClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
-import { Share2, Phone, Mail, QrCode } from 'lucide-react'
-import { QRCodeSVG } from 'qrcode.react'
-// Note: We need to install qrcode.react types if not present, but it's usually fine. 
-// Actually I installed qrcode.react, let's hope it works with SSR or I might need a client component for QR.
-// To be safe, I'll make a client component for the QR code display to avoid hydration issues.
+import PublicCardWrapper from '@/components/PublicCardWrapper'
 
-import ProfileView from '@/components/ProfileView'
+export const dynamic = 'force-dynamic'
 
-// We'll separate the view into a component for reusability (preview)
 export default async function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
     const { username } = await params
     const supabase = await createClient()
 
     const { data: card } = await supabase
         .from('cards')
-        .select('*')
+        .select('*, profiles(name)') // Join with profiles to get name
         .eq('username_slug', username)
         .single()
 
@@ -23,5 +18,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         notFound()
     }
 
-    return <ProfileView card={card} />
+    // Map the joined profile name to the card data structure
+    const cardWithProfile = {
+        ...card,
+        name: card.profiles?.name || card.username_slug // Fallback to slug if name missing
+    }
+
+    return <PublicCardWrapper data={cardWithProfile} />
 }
