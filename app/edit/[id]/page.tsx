@@ -107,6 +107,7 @@ export default function EditCardPage({ params }: { params: Promise<{ id: string 
 
         const { error } = await supabase.from('cards').update({
             username_slug: formData.username_slug,
+            name: formData.name,
             job_title: formData.job_title,
             company_name: formData.company_name,
             tagline: formData.tagline,
@@ -173,8 +174,7 @@ export default function EditCardPage({ params }: { params: Promise<{ id: string 
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Name</label>
-                                        <input type="text" name="name" disabled className="w-full rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 sm:text-sm py-2.5 cursor-not-allowed" value={formData.name} />
-                                        <p className="text-xs text-gray-500 mt-1">To change display name, update your main profile settings.</p>
+                                        <input type="text" name="name" className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5" value={formData.name} onChange={handleChange} placeholder="e.g. John Doe" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Job Title</label>

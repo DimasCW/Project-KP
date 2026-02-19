@@ -68,6 +68,7 @@ export default function CreateCardPage() {
         const { error } = await supabase.from('cards').insert({
             user_id: user.id,
             username_slug: formData.username_slug,
+            name: formData.name,
             job_title: formData.job_title,
             company_name: formData.company_name,
             tagline: formData.tagline,

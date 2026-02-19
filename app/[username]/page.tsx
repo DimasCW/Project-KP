@@ -10,7 +10,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
     const { data: card } = await supabase
         .from('cards')
-        .select('*, profiles(name)') // Join with profiles to get name
+        .select('*')
         .eq('username_slug', username)
         .single()
 
@@ -18,11 +18,5 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         notFound()
     }
 
-    // Map the joined profile name to the card data structure
-    const cardWithProfile = {
-        ...card,
-        name: card.profiles?.name || card.username_slug // Fallback to slug if name missing
-    }
-
-    return <PublicCardWrapper data={cardWithProfile} />
+    return <PublicCardWrapper data={card} />
 }
